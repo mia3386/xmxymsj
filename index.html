@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>小苗小羊觅食记</title>
+  <meta name="description" content="固定评价人（小苗/小羊）对餐厅进行环境/口味/性价比评分（1~5 可小数），支持新增/编辑、批量导入导出、清空数据、可折叠餐厅列表、按列排序与三列Top10维度排名。">
+  <style>
+    :root{
+      --bg:#0d1320;
+      --panel:#121930;
+      --panel-2:#0f1630;
+      --text:#e9edff;
+      --muted:#93a0c6;
+      --line:#2e3a62;
+      --accent:#7aa2ff;
+      --accent2:#9bffd1;
+      --danger:#ff6b6b;
+      --ok:#24d094;
+      --blue:#7db1ff;
+      --red:#ff6b6b;
+      --radius:16px;
+      --shadow:0 14px 36px rgba(0,0,0,.35);
+      --fs-base:17px;
+      --fs-lg:19px;
+      --fs-xl:22.5px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:
+        radial-gradient(1000px 520px at 80% -10%,#3556b333,transparent 60%),
+        linear-gradient(180deg,#0b1126,#0a0f1f 60%);
+      color:var(--text);
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Noto Sans CJK SC","PingFang SC","Microsoft YaHei",sans-serif;
+      font-size:var(--fs-base);
+      line-height:1.6;
+    }
+    .wrap{max-width:1180px;margin:48px auto;padding:0 22px 80px}
+    header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px;gap:14px;flex-wrap:wrap}
+    h1{margin:0;font-weight:800;letter-spacing:.4px;font-size:clamp(24px,3.2vw,38px);
+       background:linear-gradient(90deg,#a3ffd9,#86b6ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .sub{color:var(--muted);font-size:13px;margin:8px 0 0}
+    .card{background:linear-gradient(180deg,var(--panel),#0f1839);border:1px solid var(--line);
+          border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:18px}
+    .card h2{font-size:var(--fs-lg);margin:0;padding:18px 18px 0}
+    .body{padding:4px 18px 18px}
+    .row{display:grid;grid-template-columns: repeat(2,1fr); gap:14px}
+    .row-3{display:grid;grid-template-columns: repeat(3,1fr); gap:14px}
+    .cols-3{display:grid;grid-template-columns:repeat(3,1fr); gap:16px}
+    @media (max-width:980px){ .row,.row-3,.cols-3{ grid-template-columns:1fr } }
+    label{font-size:13px;color:var(--muted);display:block;margin:10px 0 6px}
+    input,select{width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:#0c1330;color:var(--text);outline:none;font-size:var(--fs-base)}
+    input:focus,select:focus{box-shadow:0 0 0 3px #86b6ff44;border-color:#86b6ff66}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    button{appearance:none;border:1px solid #3a53aa;cursor:pointer;border-radius:14px;padding:12px 16px;font-weight:800;color:#0b1126;background:var(--accent);font-size:var(--fs-base)}
+    button:hover{filter:brightness(1.06) saturate(1.08)}
+    .outline{background:#0c1330;color:var(--text)}
+    .danger{background:var(--danger);border-color:#ff5464;color:white}
+    .ghost{background:#141c44;border:1px solid var(--line);color:var(--text)}
+    .ok{background:var(--ok);border-color:#0000;color:#041712}
+    .muted{color:var(--muted)}
+    .table-wrap{overflow:auto;max-height:520px}
+    table{width:100%;border-collapse:separate;border-spacing:0 12px;min-width:900px;font-size:var(--fs-base)}
+    thead th{position:sticky;top:0;background:#0f1d52;padding:10px 12px;color:#dfe5ff;font-size:13px;text-align:left;user-select:none}
+    thead th.sortable{cursor:pointer}
+    thead th.sortable .arrow{opacity:.9;margin-left:6px;font-size:12px;color:#b7c5ff;font-weight:700}
+    tbody td{background:#101a48;border:1px solid #364985;padding:12px}
+    tbody tr td:first-child{border-radius:14px 0 0 14px}
+    tbody tr td:last-child{border-radius:0 14px 14px 0}
+    .op-btn{padding:8px 10px;border-radius:10px;background:#18245a;border:1px solid #455faa;color:#e7edff;font-weight:800}
+    .op-btn:hover{border-color:#6480d1}
+    .pair{font-weight:900}
+    .pair .l{color:var(--red)}
+    .pair .r{color:var(--blue)}
+    .bar{height:16px;border-radius:999px;background:#263366;overflow:hidden}
+    .fill{height:100%;background:linear-gradient(90deg,#a3ffd9,#86b6ff)}
+    .stat-badge{font-size:12.5px;padding:6px 10px;border-radius:999px;background:#0e1542;border:1px solid #3a4b80;display:inline-block;color:#e6ecff}
+    .toast{position:fixed;left:50%;transform:translateX(-50%) translateY(10px);bottom:24px;background:#0f1a46;border:1px solid var(--line);padding:12px 16px;border-radius:14px;opacity:0;transition:.25s;pointer-events:none}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .footer{color:var(--muted);font-size:12.5px;text-align:center;margin-top:12px}
+    .kbd{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0e132e;border:1px solid #3a4b80;border-radius:6px;padding:2px 6px;color:#e6ecff}
+    .hint{font-size:12.5px;color:var(--muted)}
+    .section-actions{display:flex;justify-content:space-between;align-items:center;padding:0 18px 6px}
+    .section-actions .right{display:flex;gap:10px;align-items:center}
+    .nowrap{white-space:nowrap}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>小苗小羊觅食记</h1>
+        <!-- <p class="sub">固定评价人：<b>小苗</b> & <b>小羊</b>。日期使用 <b>yyyymmdd</b>（示例：20250811）。</p> -->
+      </div>
+      <div class="actions">
+        <button id="statBtn" class="ok">统计维度排名</button>
+        <button id="importBtn" class="ghost">导入 JSON/Excel(CSV)</button>
+        <button id="exportJsonBtn" class="ghost">导出 JSON</button>
+        <button id="exportCsvBtn" class="ghost">导出 Excel（CSV）</button>
+        <button id="clearAllBtn" class="danger">清空所有数据</button>
+        <input type="file" id="importFile" accept=".json,.csv" style="display:none" />
+      </div>
+    </header>
+
+    <!-- 新增餐厅（日期必填，8位 yyyymmdd） -->
+    <section class="card">
+      <h2>新增餐厅</h2>
+      <div class="body">
+        <div class="row-3">
+          <div>
+            <label>日期（yyyymmdd）</label>
+            <input type="text" id="new_date" placeholder="20250811" inputmode="numeric" pattern="\d{8}" required>
+          </div>
+          <div>
+            <label>餐厅名称</label>
+            <input id="new_name" type="text" placeholder="例如：蜀味小馆 / Sushi Kazu">
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="createBtn" style="width:100%">添加餐厅</button>
+          </div>
+        </div>
+        <p class="hint">也可先批量导入，再逐个补评分。</p>
+      </div>
+    </section>
+
+    <!-- 更新餐厅评分：可编辑餐厅名；日期同样采用 yyyymmdd（非必填） -->
+    <section class="card" id="updateCard" style="display:none">
+      <div class="section-actions">
+        <h2 style="padding:0;margin:0">更新餐厅评分</h2>
+        <div class="right"><button id="cancelEdit" class="outline">取消编辑</button></div>
+      </div>
+      <div class="body">
+        <div class="row-3">
+          <div>
+            <label>餐厅名（可修改）</label>
+            <input id="upd_name" type="text" placeholder="请输入餐厅名">
+          </div>
+          <div>
+            <label>日期（yyyymmdd）</label>
+            <input type="text" id="upd_date" placeholder="20250811" inputmode="numeric" pattern="\d{8}">
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:6px">
+          <div>
+            <label style="font-weight:800">小苗 · 评分</label>
+            <div class="row-3">
+              <div><label>环境</label><input type="number" id="a_env" step="0.1" min="1" max="5" placeholder="1-5"></div>
+              <div><label>口味</label><input type="number" id="a_taste" step="0.1" min="1" max="5" placeholder="1-5"></div>
+              <div><label>性价比</label><input type="number" id="a_value" step="0.1" min="1" max="5" placeholder="1-5"></div>
+            </div>
+          </div>
+          <div>
+            <label style="font-weight:800">小羊 · 评分</label>
+            <div class="row-3">
+              <div><label>环境</label><input type="number" id="b_env" step="0.1" min="1" max="5" placeholder="1-5"></div>
+              <div><label>口味</label><input type="number" id="b_taste" step="0.1" min="1" max="5" placeholder="1-5"></div>
+              <div><label>性价比</label><input type="number" id="b_value" step="0.1" min="1" max="5" placeholder="1-5"></div>
+            </div>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="saveScoreBtn">保存</button>
+          <button id="resetScoreBtn" class="outline">清空本次输入</button>
+        </div>
+        <p class="hint" id="editingHint">从下方列表点击<strong>编辑</strong>进入此处；保存后此面板自动收起。</p>
+      </div>
+    </section>
+
+    <!-- 餐厅列表（无序号；日期/餐厅名/维度列均可排序；可折叠） -->
+    <section class="card">
+      <div class="section-actions">
+        <h2 style="padding:0;margin:0">餐厅列表</h2>
+        <div class="right">
+          <button id="toggleListBtn" class="ghost">折叠列表</button>
+        </div>
+      </div>
+      <div class="body table-wrap" id="listBody">
+        <table>
+          <thead>
+            <tr>
+              <th id="th_date" class="sortable nowrap" style="min-width:140px">日期 <span class="arrow">↕</span></th>
+              <th id="th_name" class="sortable nowrap" style="min-width:220px">餐厅 <span class="arrow">↕</span></th>
+              <th id="th_env" class="sortable nowrap">环境（小苗/小羊） <span class="arrow">↕</span></th>
+              <th id="th_taste" class="sortable nowrap">口味（小苗/小羊） <span class="arrow">↕</span></th>
+              <th id="th_value" class="sortable nowrap">性价比（小苗/小羊） <span class="arrow">↕</span></th>
+              <th class="nowrap">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 维度排名（三列Top10 + 显示全部） -->
+    <section class="card">
+      <div class="section-actions">
+        <h2 style="padding:0;margin:0">维度排名（Top 10）</h2>
+        <div class="right">
+          <button id="toggleRanksBtn" class="ghost">显示全部排行</button>
+          <span id="countInfo" class="stat-badge">当前餐厅：0</span>
+        </div>
+      </div>
+      <div class="body" id="stats" style="display:none">
+        <div class="cols-3">
+          <div>
+            <h3 style="margin:10px 0;font-size:var(--fs-lg)">🏆 环境</h3>
+            <div id="rank_env"></div>
+          </div>
+          <div>
+            <h3 style="margin:10px 0;font-size:var(--fs-lg)">🍜 口味</h3>
+            <div id="rank_taste"></div>
+          </div>
+          <div>
+            <h3 style="margin:10px 0;font-size:var(--fs-lg)">💰 性价比</h3>
+            <div id="rank_value"></div>
+          </div>
+        </div>
+      </div>
+      <div class="section-actions" style="padding-top:0">
+        <div></div>
+        <div class="right"><button id="statBtn2" class="ok">统计并展示</button></div>
+      </div>
+    </section>
+
+    <!-- <p class="footer">快捷键：<span class="kbd">Ctrl / ⌘ + Enter</span> 在“更新餐厅评分”里保存；<span class="kbd">Esc</span> 清空当前评分输入。</p> -->
+  </div>
+
+  <div class="toast" id="toast">已保存</div>
+
+  <script>
+    // ===== 工具/状态 =====
+    const KEY='xmxy_v7'; // 沿用，以保留你的现有数据
+    const $=(q,r=document)=>r.querySelector(q);
+    const $$=(q,r=document)=>[...r.querySelectorAll(q)];
+    const toast=(m)=>{ const t=$('#toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1600)};
+    const state={ entries:[], editingId:null, sort:{key:null,dir:'desc'}, ranksShowAll:false, listCollapsed:false };
+
+    // 日期归一：8 位 yyyymmdd
+    function normalizeDate8(s){
+      if(!s) return '';
+      const digits = String(s).replace(/\D/g,'');
+      if(digits.length===8) return digits;
+      if(digits.length===6){ return '20'+digits; }
+      return '';
+    }
+    function isValidDate8(s){
+      if(!/^\d{8}$/.test(s)) return false;
+      const y=+s.slice(0,4), m=+s.slice(4,6), d=+s.slice(6,8);
+      if(m<1||m>12||d<1||d>31) return false;
+      return true;
+    }
+    function toSortNumber8(s){ return /^\d{8}$/.test(s) ? +s : -1; }
+
+    function load(){
+      try{
+        const raw=localStorage.getItem(KEY);
+        if(raw){ const arr=JSON.parse(raw); if(Array.isArray(arr)) state.entries=arr; }
+      }catch(_){}
+      state.entries.forEach(it=>{ it.date = normalizeDate8(it.date); });
+      save();
+      renderTable(); updateCount();
+    }
+    function save(){ localStorage.setItem(KEY, JSON.stringify(state.entries)) }
+    function updateCount(){ $('#countInfo').textContent='当前餐厅：'+state.entries.length }
+
+    const numOk = v => typeof v==='number' && !Number.isNaN(v);
+    const validScore = v => numOk(v) && v>=1 && v<=5;
+    const fmt1 = v => numOk(v) ? Number(v).toFixed(1) : '-';
+
+    // ===== 新增餐厅 =====
+    function createRestaurant(){
+      const name = $('#new_name').value.trim();
+      const dateRaw = $('#new_date').value.trim();
+      if(!name){ toast('请填写餐厅名称'); return; }
+      const d8 = normalizeDate8(dateRaw);
+      if(!isValidDate8(d8)){ toast('请按 yyyymmdd 填写有效日期'); return; }
+      const rec = { id: Date.now().toString(36)+Math.random().toString(36).slice(2,7), name, date:d8,
+                    a:{env:null,taste:null,value:null},
+                    b:{env:null,taste:null,value:null} };
+      state.entries.push(rec); save(); renderTable();
+      $('#new_name').value=''; $('#new_date').value='';
+      updateCount();
+      toast('已添加餐厅：'+name);
+    }
+
+    // ===== 更新餐厅评分（允许全部留空；留空=清除该项分数） =====
+    function openEditor(id){
+      const it = state.entries.find(x=>x.id===id); if(!it) return;
+      state.editingId = id;
+      $('#updateCard').style.display='block';
+      $('#upd_name').value = it.name;
+      $('#upd_date').value = it.date || '';
+      $('#a_env').value = (numOk(it.a.env)? it.a.env : '');
+      $('#a_taste').value = (numOk(it.a.taste)? it.a.taste : '');
+      $('#a_value').value = (numOk(it.a.value)? it.a.value : '');
+      $('#b_env').value = (numOk(it.b.env)? it.b.env : '');
+      $('#b_taste').value = (numOk(it.b.taste)? it.b.taste : '');
+      $('#b_value').value = (numOk(it.b.value)? it.b.value : '');
+      // $('#editingHint').innerHTML = '正在编辑：<b>'+ it.name +'</b>（留空=清除该项；日期用 yyyymmdd）';
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+    function resetScoreInputs(){
+      ['a_env','a_taste','a_value','b_env','b_taste','b_value'].forEach(id=>$('#'+id).value='');
+    }
+    function saveScores(){
+      if(!state.editingId){ toast('请先从列表点击“编辑”'); return; }
+      const it = state.entries.find(x=>x.id===state.editingId); if(!it) return;
+      // 名称
+      const newName = $('#upd_name').value.trim();
+      if(!newName){ toast('餐厅名不能为空'); return; }
+      it.name = newName;
+      // 日期（可选）
+      const dateInput = $('#upd_date').value.trim();
+      if(dateInput){
+        const d8 = normalizeDate8(dateInput);
+        if(!isValidDate8(d8)){ toast('日期需为 yyyymmdd'); return; }
+        it.date = d8;
+      }
+      // 评分：留空 => 清除（设为 null）
+      function toNumOrNull(v){
+        const s=String(v??'').trim();
+        if(s==='') return null;
+        const n=Number(s);
+        if(Number.isNaN(n) || n<1 || n>5){ toast('分数需在 1~5 之间'); throw new Error('bad'); }
+        return n;
+      }
+      try{
+        it.a.env = toNumOrNull($('#a_env').value);
+        it.a.taste = toNumOrNull($('#a_taste').value);
+        it.a.value = toNumOrNull($('#a_value').value);
+        it.b.env = toNumOrNull($('#b_env').value);
+        it.b.taste = toNumOrNull($('#b_taste').value);
+        it.b.value = toNumOrNull($('#b_value').value);
+      }catch(e){ return; }
+      save(); renderTable(); toast('已保存');
+      cancelEdit(); // 自动收起
+    }
+    function cancelEdit(){ state.editingId=null; $('#updateCard').style.display='none'; resetScoreInputs(); }
+
+    // ===== 排序辅助 =====
+    function getAvg(it, key){
+      const a = it.a[key], b = it.b[key];
+      const aOk=validScore(a), bOk=validScore(b);
+      if(aOk && bOk) return (a+b)/2;
+      if(aOk) return a - 0.001;
+      if(bOk) return b - 0.001;
+      return null;
+    }
+    function sortedEntries(){
+      const {key,dir} = state.sort;
+      const list = [...state.entries];
+      if(!key) return list;
+      const mul = dir==='asc' ? 1 : -1;
+      if(key==='name'){
+        return list.sort((x,y)=> (x.name||'').localeCompare(y.name||'', 'zh-Hans') * mul);
+      }
+      if(key==='date'){
+        return list.sort((x,y)=> (toSortNumber8(x.date) - toSortNumber8(y.date)) * mul);
+      }
+      return list.sort((x,y)=>{
+        const ax=getAvg(x,key), ay=getAvg(y,key);
+        if(ax===null && ay===null) return 0;
+        if(ax===null) return 1;
+        if(ay===null) return -1;
+        if(ax===ay) return 0;
+        return (ax>ay?1:-1)*mul;
+      });
+    }
+    function setSort(key){
+      if(state.sort.key===key){
+        state.sort.dir = (state.sort.dir==='desc' ? 'asc' : 'desc');
+      }else{
+        state.sort.key = key;
+        state.sort.dir = (key==='name'||key==='date') ? 'asc' : 'desc';
+      }
+      renderTable();
+      $$('#th_env, #th_taste, #th_value, #th_date, #th_name').forEach(th=> th.querySelector('.arrow').textContent='↕');
+      const th = key==='env'?$('#th_env'):key==='taste'?$('#th_taste'):key==='value'?$('#th_value'):key==='date'?$('#th_date'):$('#th_name');
+      th.querySelector('.arrow').textContent = state.sort.dir==='desc' ? '↓' : '↑';
+    }
+
+    // ===== 列表渲染 =====
+    function renderTable(){
+      const tb=$('#tbody'); tb.innerHTML='';
+      const data = sortedEntries();
+      data.forEach((it)=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`
+          <td>${it.date||''}</td>
+          <td>${it.name}</td>
+          <td class="pair"><span class="l">${fmt1(it.a.env)}</span>/<span class="r">${fmt1(it.b.env)}</span></td>
+          <td class="pair"><span class="l">${fmt1(it.a.taste)}</span>/<span class="r">${fmt1(it.b.taste)}</span></td>
+          <td class="pair"><span class="l">${fmt1(it.a.value)}</span>/<span class="r">${fmt1(it.b.value)}</span></td>
+          <td style="display:flex;gap:10px">
+            <button class="op-btn" data-act="edit" data-id="${it.id}">编辑</button>
+            <button class="op-btn" data-act="del" data-id="${it.id}">删除</button>
+          </td>`;
+        tb.appendChild(tr);
+      });
+      updateCount();
+    }
+
+    // ===== 列表事件 =====
+    $('#tbody').addEventListener('click',(e)=>{
+      const btn=e.target.closest('button[data-act]'); if(!btn) return;
+      const id=btn.dataset.id; const act=btn.dataset.act;
+      const it=state.entries.find(x=>x.id===id); if(!it) return;
+      if(act==='edit'){ openEditor(id); }
+      else if(act==='del'){
+        if(confirm('确认删除「'+it.name+'」？')){
+          state.entries=state.entries.filter(x=>x.id!==id); save(); renderTable(); if(state.editingId===id) cancelEdit(); toast('已删除');
+        }
+      }
+    });
+
+    // ===== 可折叠列表 =====
+    $('#toggleListBtn').addEventListener('click',()=>{
+      state.listCollapsed = !state.listCollapsed;
+      $('#listBody').style.display = state.listCollapsed ? 'none' : 'block';
+      $('#toggleListBtn').textContent = state.listCollapsed ? '展开列表' : '折叠列表';
+    });
+
+    // ===== 维度排名 =====
+    function computeStats(){
+      const rows = state.entries.map(it=>{
+        const env = (validScore(it.a.env) && validScore(it.b.env)) ? (it.a.env+it.b.env)/2 : null;
+        const taste = (validScore(it.a.taste) && validScore(it.b.taste)) ? (it.a.taste+it.b.taste)/2 : null;
+        const value = (validScore(it.a.value) && validScore(it.b.value)) ? (it.a.value+it.b.value)/2 : null;
+        return {name:it.name, env, taste, value};
+      });
+      return {
+        env: rows.filter(r=>numOk(r.env)).sort((a,b)=>b.env-a.env),
+        taste: rows.filter(r=>numOk(r.taste)).sort((a,b)=>b.taste-a.taste),
+        value: rows.filter(r=>numOk(r.value)).sort((a,b)=>b.value-a.value),
+      };
+    }
+    function renderRanks(){
+      const s=computeStats();
+      const make=(arr,rootId,field)=>{
+        const root=$('#'+rootId); root.innerHTML='';
+        const list = state.ranksShowAll ? arr : arr.slice(0,10);
+        list.forEach((r,i)=>{
+          const idx = i+1;
+          const pct=(r[field]/5*100).toFixed(1);
+          const row=document.createElement('div'); row.style.margin='10px 0';
+          row.innerHTML=`
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+              <span class="stat-badge">#${idx}</span>
+              <div style="min-width:180px">${r.name}</div>
+              <div class="muted" style="font-size:13px">${r[field].toFixed(2)} / 5</div>
+            </div>
+            <div class="bar"><div class="fill" style="width:${pct}%"></div></div>
+          `;
+          root.appendChild(row);
+        });
+        if(!state.ranksShowAll && arr.length>10){
+          const more = document.createElement('div');
+          more.className='hint';
+          more.textContent = `…… 共 ${arr.length} 家，当前显示 Top 10`;
+          root.appendChild(more);
+        }
+      };
+      make(s.env,'rank_env','env');
+      make(s.taste,'rank_taste','taste');
+      make(s.value,'rank_value','value');
+      $('#stats').style.display='block';
+      const y=$('#stats').getBoundingClientRect().top + window.scrollY - 10;
+      window.scrollTo({top:y,behavior:'smooth'});
+    }
+
+    // ===== 导出 =====
+    function exportJSON(){
+      const blob=new Blob([JSON.stringify(state.entries,null,2)],{type:'application/json;charset=utf-8'});
+      download(blob,'小苗小羊觅食记-数据.json');
+    }
+    function exportCSV(){
+      const rows=[];
+      rows.push(['日期(yyyymmdd)','餐厅','小苗·环境','小苗·口味','小苗·性价比','小羊·环境','小羊·口味','小羊·性价比','环境均分','口味均分','性价比均分']);
+      state.entries.forEach(it=>{
+        const envAvg = (validScore(it.a.env) && validScore(it.b.env)) ? ((it.a.env+it.b.env)/2).toFixed(2) : '';
+        const tasteAvg = (validScore(it.a.taste) && validScore(it.b.taste)) ? ((it.a.taste+it.b.taste)/2).toFixed(2) : '';
+        const valueAvg = (validScore(it.a.value) && validScore(it.b.value)) ? ((it.a.value+it.b.value)/2).toFixed(2) : '';
+        rows.push([it.date||'', it.name, fmt1(it.a.env), fmt1(it.a.taste), fmt1(it.a.value), fmt1(it.b.env), fmt1(it.b.taste), fmt1(it.b.value), envAvg, tasteAvg, valueAvg]);
+      });
+      const csv=rows.map(r=>r.map(s=>{
+        const t=String(s??''); return /[",\n]/.test(t)?('"'+t.replace(/"/g,'""')+'"'):t;
+      }).join(',')).join('\n');
+      const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+      download(blob,'小苗小羊觅食记-Excel.csv');
+    }
+    function download(blob,filename){
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click();
+      setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove()},0);
+      toast('已导出：'+filename);
+    }
+
+    // ===== 清空全部 =====
+    function clearAll(){
+      if(!state.entries.length){ toast('没有可清空的数据'); return; }
+      const ok = confirm('⚠️ 将清空本地保存的所有餐厅与评分，且不可恢复。\n确定要继续吗？');
+      if(!ok) return;
+      state.entries = [];
+      save(); renderTable(); cancelEdit(); updateCount();
+      toast('已清空所有数据');
+    }
+
+    // ===== 导入（JSON / CSV） =====
+    function handleImportFile(file){
+      const name = (file.name||'').toLowerCase();
+      const isJSON = name.endsWith('.json');
+      const reader = new FileReader();
+      reader.onload = (e)=>{
+        const text = e.target.result;
+        try{
+          let imported=[];
+          if(isJSON || (!text.includes(',') && text.trim().startsWith('['))){
+            imported = importFromJSON(text);
+          }else{
+            imported = importFromCSV(text);
+          }
+          if(!imported.length){ toast('未识别到有效数据'); return; }
+          const replace = confirm(`将导入 ${imported.length} 条记录。\n确定=清空并替换；取消=在现有数据上追加/覆盖重复项。`);
+          if(replace){
+            state.entries = imported;
+          }else{
+            const map = new Map(state.entries.map(it=>[it.name+'|'+(it.date||''), it]));
+            imported.forEach(it=> map.set(it.name+'|'+(it.date||''), it));
+            state.entries = Array.from(map.values());
+          }
+          save(); renderTable(); updateCount();
+          toast('导入完成');
+        }catch(err){
+          console.error(err);
+          toast('导入失败：'+ (err.message||'格式错误'));
+        }
+      };
+      reader.readAsText(file,'utf-8');
+    }
+
+    function importFromJSON(text){
+      const arr = JSON.parse(text);
+      if(!Array.isArray(arr)) throw new Error('JSON 顶层应为数组');
+      const out=[];
+      arr.forEach(obj=>{
+        if(!obj) return;
+        const name = (obj.name||obj['餐厅']||obj['餐厅名称']||obj['餐厅名']||'').trim();
+        const date = normalizeDate8(obj.date||obj['日期']||obj['日期(yyyymmdd)']||obj['date']||'');
+        if(!name) return;
+        const a = obj.a || {};
+        const b = obj.b || {};
+        function n(v){ if(v===null||v===undefined||v==='') return null; const x=Number(v); return Number.isFinite(x)&&x>=1&&x<=5?x:null; }
+        const rec = {
+          id: Date.now().toString(36)+Math.random().toString(36).slice(2,7),
+          name,
+          date: isValidDate8(date)? date : '',
+          a:{ env: n(a.env ?? obj.a_env ?? obj['小苗·环境']), taste: n(a.taste ?? obj.a_taste ?? obj['小苗·口味']), value: n(a.value ?? obj.a_value ?? obj['小苗·性价比']) },
+          b:{ env: n(b.env ?? obj.b_env ?? obj['小羊·环境']), taste: n(b.taste ?? obj.b_taste ?? obj['小羊·口味']), value: n(b.value ?? obj.b_value ?? obj['小羊·性价比']) },
+        };
+        out.push(rec);
+      });
+      return out;
+    }
+
+    function parseCSV(text){
+      const rows=[]; let cur='', row=[], inQ=false;
+      const pushCell=()=>{ row.push(cur); cur=''; };
+      const pushRow=()=>{ rows.push(row); row=[]; };
+      for(let i=0;i<text.length;i++){
+        const ch=text[i];
+        if(inQ){
+          if(ch==='\"'){
+            if(text[i+1]==='\"'){ cur+='\"'; i++; } else { inQ=false; }
+          } else { cur+=ch; }
+        }else{
+          if(ch==='\"'){ inQ=true; }
+          else if(ch===','){ pushCell(); }
+          else if(ch==='\n'){ pushCell(); pushRow(); }
+          else if(ch==='\r'){}
+          else { cur+=ch; }
+        }
+      }
+      if(cur!=='' || row.length){ pushCell(); pushRow(); }
+      if(rows.length && rows[0].length){ rows[0][0]=rows[0][0].replace(/^\uFEFF/,''); }
+      return rows;
+    }
+
+    function importFromCSV(text){
+      const rows = parseCSV(text);
+      if(rows.length<2) throw new Error('CSV 至少需要表头与一行数据');
+      const header = rows[0].map(h=>h.trim());
+      const idx = (names)=>{
+        for(const n of names){ const k=header.findIndex(h=>h===n); if(k!==-1) return k; }
+        return -1;
+      };
+      const iDate = idx(['日期','日期(yyyymmdd)','date','Date']);
+      const iName = idx(['餐厅','餐厅名称','餐厅名','name','Name']);
+      const iAE = idx(['小苗·环境','a_env','a.env','aEnv']);
+      const iAT = idx(['小苗·口味','a_taste','a.taste','aTaste']);
+      const iAV = idx(['小苗·性价比','a_value','a.value','aValue']);
+      const iBE = idx(['小羊·环境','b_env','b.env','bEnv']);
+      const iBT = idx(['小羊·口味','b_taste','b.taste','bTaste']);
+      const iBV = idx(['小羊·性价比','b_value','b.value','bValue']);
+      if(iName===-1) throw new Error('缺少“餐厅/餐厅名称/name”等列');
+      const out=[];
+      for(let r=1;r<rows.length;r++){
+        const cells = rows[r];
+        if(cells.every(c=>String(c||'').trim()==='')) continue;
+        const name = (cells[iName]||'').trim();
+        if(!name) continue;
+        const date = normalizeDate8(iDate===-1?'':cells[iDate]);
+        function n(i){ if(i===-1) return null; const s=String(cells[i]??'').trim(); const x=Number(s); return Number.isFinite(x)&&x>=1&&x<=5?x:null; }
+        const rec = {
+          id: Date.now().toString(36)+Math.random().toString(36).slice(2,7),
+          name,
+          date: isValidDate8(date)? date : '',
+          a:{ env:n(iAE), taste:n(iAT), value:n(iAV) },
+          b:{ env:n(iBE), taste:n(iBT), value:n(iBV) },
+        };
+        out.push(rec);
+      }
+      return out;
+    }
+
+    // 事件
+    $('#createBtn').addEventListener('click',createRestaurant);
+    $('#saveScoreBtn').addEventListener('click',saveScores);
+    $('#resetScoreBtn').addEventListener('click',resetScoreInputs);
+    $('#cancelEdit').addEventListener('click',cancelEdit);
+    $('#statBtn').addEventListener('click',renderRanks);
+    $('#statBtn2').addEventListener('click',renderRanks);
+    $('#exportJsonBtn').addEventListener('click',exportJSON);
+    $('#exportCsvBtn').addEventListener('click',exportCSV);
+    $('#th_env').addEventListener('click',()=>setSort('env'));
+    $('#th_taste').addEventListener('click',()=>setSort('taste'));
+    $('#th_value').addEventListener('click',()=>setSort('value'));
+    $('#th_date').addEventListener('click',()=>setSort('date'));
+    $('#th_name').addEventListener('click',()=>setSort('name'));
+    $('#toggleRanksBtn').addEventListener('click',()=>{
+      state.ranksShowAll = !state.ranksShowAll;
+      $('#toggleRanksBtn').textContent = state.ranksShowAll ? '只看前10' : '显示全部排行';
+      renderRanks();
+    });
+    document.addEventListener('keydown',(e)=>{
+      if((e.ctrlKey||e.metaKey) && e.key==='Enter'){ if($('#updateCard').style.display!=='none') saveScores(); }
+      if(e.key==='Escape'){ resetScoreInputs(); }
+    });
+    $('#clearAllBtn').addEventListener('click',clearAll);
+    $('#importBtn').addEventListener('click',()=> $('#importFile').click());
+    $('#importFile').addEventListener('change',(e)=>{
+      const f=e.target.files && e.target.files[0];
+      if(!f) return;
+      handleImportFile(f);
+      e.target.value='';
+    });
+
+    // 启动
+    load();
+  </script>
+</body>
+</html>
