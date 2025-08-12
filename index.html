@@ -662,5 +662,60 @@
     // 启动
     load();
   </script>
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyDyFOQS8_IbNqiwGKuOZiiksxTfjJNGun0",
+    authDomain: "xmxymsj.firebaseapp.com",
+    projectId: "xmxymsj",
+    storageBucket: "xmxymsj.firebasestorage.app",
+    messagingSenderId: "308463179838",
+    appId: "1:308463179838:web:36247a74088da5ff5dd96f",
+    measurementId: "G-ZDWFSKVSM5"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+
+  // 读取餐厅数据
+async function fetchRestaurants() {
+  const querySnapshot = await db.collection('restaurants').get();
+  querySnapshot.forEach((doc) => {
+    const restaurant = doc.data();
+    // 渲染餐厅信息到页面
+    console.log(doc.id, restaurant);
+  });
+}
+
+// 添加餐厅
+async function addRestaurant(name, date) {
+  const docRef = await db.collection('restaurants').add({
+    name: name,
+    date: date,
+    a_env: null,
+    a_taste: null,
+    a_value: null,
+    b_env: null,
+    b_taste: null,
+    b_value: null
+  });
+  console.log("Document written with ID: ", docRef.id);
+}
+
+// 更新餐厅评分
+async function updateRestaurant(id, data) {
+  const docRef = db.collection('restaurants').doc(id);
+  await docRef.update(data);
+  console.log("Document updated");
+}
+</script>
 </body>
 </html>
