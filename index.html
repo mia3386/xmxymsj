@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>小苗小羊觅食
+  <title>小苗小羊觅食记
   </title>
   <meta name="description" content="固定评价人（小苗/小羊）对餐厅进行环境/口味/性价比评分（1~5 可小数），支持新增/编辑、批量导入导出、清空数据、可折叠餐厅列表、按列排序与三列Top10维度排名。">
   <style>
@@ -91,7 +91,7 @@
   <div class="wrap">
     <header>
       <div>
-        <h1>小苗小羊觅食</h1>
+        <h1>小苗小羊觅食记</h1>
         <!-- <p class="sub">固定评价人：<b>小苗</b> & <b>小羊</b>。日期使用 <b>yyyymmdd</b>（示例：20250811）。</p> -->
       </div>
       <div class="actions">
@@ -129,14 +129,14 @@
     <!-- 更新餐厅评分：可编辑餐厅名；日期同样采用 yyyymmdd（非必填） -->
     <section class="card" id="updateCard" style="display:none">
       <div class="section-actions">
-        <h2 style="padding:0;margin:0">更新餐厅评分</h2>
+        <h2 style="padding:0;margin:0">餐厅评分</h2>
         <div class="right"><button id="cancelEdit" class="outline">取消编辑</button></div>
       </div>
       <div class="body">
         <div class="row-3">
           <div>
-            <label>餐厅名（可修改）</label>
-            <input id="upd_name" type="text" placeholder="请输入餐厅名">
+            <label>餐厅名称</label>
+            <input id="upd_name" type="text" placeholder="请输入餐厅名称">
           </div>
           <div>
             <label>日期（yyyymmdd）</label>
@@ -166,7 +166,7 @@
           <button id="saveScoreBtn">保存</button>
           <button id="resetScoreBtn" class="outline">清空本次输入</button>
         </div>
-        <p class="hint" id="editingHint">从下方列表点击<strong>编辑</strong>进入此处；保存后此面板自动收起。</p>
+        <!-- <p class="hint" id="editingHint">从下方列表点击<strong>编辑</strong>进入此处；保存后此面板自动收起。</p> -->
       </div>
     </section>
 
